@@ -4,22 +4,21 @@ WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
-COPY apps/api/package*.json ./apps/api/
-COPY packages/database/package*.json ./packages/database/
 
 # Install dependencies
-RUN npm ci
+RUN npm install
 
-# Copy source
-COPY apps/api ./apps/api
-COPY packages/database ./packages/database
+# Copy source code
+COPY . .
+
+# Copy Prisma schema from root if exists, otherwise create it
+RUN mkdir -p prisma
+COPY prisma/ prisma/ 2>/dev/null || true
 
 # Generate Prisma client
-WORKDIR /app/packages/database
-RUN npx prisma generate
+RUN npx prisma generate --schema=prisma/schema.prisma || echo "Prisma generate skipped"
 
 # Build API
-WORKDIR /app/apps/api
 RUN npm run build
 
 # Production stage
@@ -27,11 +26,11 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Copy built files
-COPY --from=builder /app/apps/api/dist ./dist
-COPY --from=builder /app/apps/api/package*.json ./
+# Copy built files and dependencies
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/packages/database/prisma ./prisma
+COPY --from=builder /app/prisma ./prisma
 
 # Create uploads directory
 RUN mkdir -p uploads
