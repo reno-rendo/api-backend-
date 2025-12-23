@@ -11,12 +11,8 @@ RUN npm install
 # Copy source code
 COPY . .
 
-# Copy Prisma schema from root if exists, otherwise create it
-RUN mkdir -p prisma
-COPY prisma/ prisma/ 2>/dev/null || true
-
-# Generate Prisma client
-RUN npx prisma generate --schema=prisma/schema.prisma || echo "Prisma generate skipped"
+# Generate Prisma client (prisma folder sudah ada dari COPY . .)
+RUN npx prisma generate --schema=prisma/schema.prisma
 
 # Build API
 RUN npm run build
